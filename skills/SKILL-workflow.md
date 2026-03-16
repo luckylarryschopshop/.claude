@@ -13,9 +13,11 @@ Before any action in a new session:
 
   STEP 1 — Re-read the project CLAUDE.md in full
   STEP 2 — Re-read HANDOFF.md (what was last built, what is next, gotchas)
-            If HANDOFF.md does not exist (Phase 1, fresh project): skip this step.
+            If HANDOFF.md does not exist (Phase 1, fresh start): skip this step.
             Note the absence in the status report — do not treat it as an error.
   STEP 3 — Read tasks/lessons.md (accumulated corrections — treat as standing rules)
+            If tasks/lessons.md does not exist (Phase 1, fresh start): skip this step.
+            Note the absence in the status report — do not treat it as an error.
   STEP 4 — Run: git log --oneline -10
   STEP 5 — Run the project's test suite (pytest / npm test / swift test)
   STEP 6 — Report status:

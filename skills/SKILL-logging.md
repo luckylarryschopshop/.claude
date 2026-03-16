@@ -21,8 +21,12 @@ reading the code.
 [YYYY-MM-DD HH:MM:SS] [LEVEL] [COMPONENT] message
 ```
 
-Levels: `INFO`, `WARN`, `ERROR`, `DEBUG`
+Levels: `INFO`, `WARNING`, `ERROR`, `DEBUG`
 DEBUG only emitted when `LOG_LEVEL=DEBUG` in environment.
+
+Note: Python's logging module emits `WARNING` (not `WARN`). The formatter
+uses `%(levelname)s` which outputs the full name. Log examples below use
+`WARNING` to match actual output.
 
 ---
 
@@ -56,7 +60,7 @@ Add project-specific components as needed. Keep names ALL_CAPS, one word.
 [2025-01-15 09:32:11] [INFO] [DETECTOR] Identified as source_type_a (filename match)
 [2025-01-15 09:32:12] [INFO] [PARSER] Parsed 47 rows from import_jan2025.csv
 [2025-01-15 09:32:12] [INFO] [PIPELINE] 3 rows skipped (duplicates), 44 new rows written
-[2025-01-15 09:32:12] [WARN] [PIPELINE] Low confidence match (62%) for "ACME*123XYZ" — queued for review
+[2025-01-15 09:32:12] [WARNING] [PIPELINE] Low confidence match (62%) for "ACME*123XYZ" — queued for review
 [2025-01-15 09:32:12] [ERROR] [PARSER] Row 23 in import_jan2025.csv — date "13/45/2025" could not be parsed. Expected MM/DD/YYYY. Transaction rolled back.
 [2025-01-15 09:32:12] [INFO] [PIPELINE] Complete: import_jan2025.csv → 44 imported, 3 skipped, 0 failed.
 ```
@@ -132,6 +136,10 @@ handler.setFormatter(logging.Formatter(
 ## Logging Initialisation Pattern
 
 ```python
+import logging
+import os
+from logging.handlers import RotatingFileHandler
+
 def configure_logging():
     """
     Initialise application logging.
