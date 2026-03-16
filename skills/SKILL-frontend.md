@@ -277,15 +277,25 @@ Triggered by `window.print()`. Outputs to PDF via browser "Save as PDF".
 // Safari note: requestAnimationFrame does not reliably fire before the print
 // dialog opens. Instead, render charts synchronously and use chart.update()
 // with 'none' animation so toDataURL() captures a complete frame.
+//
+// Pattern: keep a Map of print chart instances so capturePrintCharts can
+// retrieve them by ID without depending on global state or DOM traversal.
+const printChartInstances = new Map();  // chartId → Chart instance
+
+function registerPrintChart(chartId, chartInstance) {
+  // Call this after creating each Chart instance intended for print output.
+  printChartInstances.set(chartId, chartInstance);
+}
+
 function capturePrintCharts() {
   const staging = document.getElementById("print-canvas-staging");
   staging.style.display = "block";
 
-  // Render each print chart with animation disabled, then capture immediately
   staging.querySelectorAll("canvas[data-print-chart]").forEach(canvas => {
     const chartId = canvas.dataset.printChart;
-    const chartInstance = getPrintChart(chartId);  // renders with { animation: false }
-    chartInstance.update("none");  // force synchronous paint
+    const chartInstance = printChartInstances.get(chartId);
+    if (!chartInstance) return;
+    chartInstance.update("none");  // force synchronous paint, no animation
     const img = document.createElement("img");
     img.src = canvas.toDataURL("image/png");
     canvas.replaceWith(img);

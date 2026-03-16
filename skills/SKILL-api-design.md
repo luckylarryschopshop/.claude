@@ -101,6 +101,9 @@ This script runs in CI and blocks merges if any route is undocumented.
 Required on all list endpoints. Standard response envelope:
 
 ```python
+from typing import Generic, TypeVar
+T = TypeVar("T")
+
 class PaginatedResponse(BaseModel, Generic[T]):
     items: list[T]
     total: int = Field(..., description="Total matching records")
