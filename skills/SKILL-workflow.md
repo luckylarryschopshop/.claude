@@ -13,6 +13,8 @@ Before any action in a new session:
 
   STEP 1 — Re-read the project CLAUDE.md in full
   STEP 2 — Re-read HANDOFF.md (what was last built, what is next, gotchas)
+            If HANDOFF.md does not exist (Phase 1, fresh project): skip this step.
+            Note the absence in the status report — do not treat it as an error.
   STEP 3 — Read tasks/lessons.md (accumulated corrections — treat as standing rules)
   STEP 4 — Run: git log --oneline -10
   STEP 5 — Run the project's test suite (pytest / npm test / swift test)
@@ -120,7 +122,7 @@ Goal: [one sentence]
 [Exactly what can be demonstrated to work right now]
 - Tests passing: [list test IDs]
 - Manual verification: [what was tested by hand]
-- mypy status: [clean / N errors in domain/]
+- Type checker status: [clean / N errors — mypy, tsc, swiftc, etc.]
 
 ## What is next (first task of next phase)
 [Single specific task — not a phase summary]
@@ -173,7 +175,7 @@ Trigger memory update when:
 
 ### Subagent briefing template
 ```
-Task: [single specific task — one tack only]
+Task: [single specific task — one task only]
 Input: [exactly what to use as input]
 Output: [exactly what to return — format specified]
 Constraints: [what NOT to do, what NOT to load]

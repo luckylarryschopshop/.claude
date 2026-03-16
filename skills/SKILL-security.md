@@ -120,7 +120,7 @@ salt.bin
 
 # Secrets
 .env
-*.env.*
+.env.*
 !.env.example
 
 # Logs
@@ -152,12 +152,17 @@ to the project's `.gitignore` and to the pre-commit hook patterns.
 # Install: cp scripts/pre-commit-check.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 # Add project-specific patterns to BLOCKED array below.
 
-BLOCKED=("*.db" ".env" "salt.bin" "*.enc" "*.key" ".passphrase")
+# Uses regex patterns, not globs — \.db$ matches files ending in .db
+# ^\.env catches .env, .env.local, .env.production etc but NOT .env.example
+# (the || true prevents grep non-match from causing set -e failures)
+BLOCKED=("\.db$" "\.db-shm$" "\.db-wal$" "^\.env" "salt\.bin$" "\.enc$" "\.key$" "\.passphrase$")
 STAGED=$(git diff --cached --name-only)
+# Explicitly allow .env.example — it's the safe committed placeholder
+STAGED_FILTERED=$(echo "$STAGED" | grep -v "\.env\.example$" || true)
 FAIL=0
 
 for pattern in "${BLOCKED[@]}"; do
-    MATCHES=$(echo "$STAGED" | grep -E "$pattern" || true)
+    MATCHES=$(echo "$STAGED_FILTERED" | grep -E "$pattern" || true)
     if [ -n "$MATCHES" ]; then
         echo "BLOCKED: Sensitive file staged: $MATCHES"
         FAIL=1

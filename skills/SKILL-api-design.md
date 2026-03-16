@@ -13,7 +13,11 @@ Route handlers are thin wrappers. 5–15 lines maximum.
 No business logic. No direct DB access.
 Pattern: validate input → call service → serialise response.
 
+The example below is Python/FastAPI. The principle applies to any framework —
+Express, Hono, Vapor (Swift), Ktor (Kotlin) — the shape should be the same.
+
 ```python
+# Python/FastAPI example — principle is framework-agnostic
 @router.get("/transactions", response_model=TransactionListResponse,
             operation_id="get_transaction_list",
             summary="List transactions with optional filters")
@@ -22,7 +26,7 @@ async def get_transaction_list(
     category: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session),  # FastAPI dependency injection
 ) -> TransactionListResponse:
     return transaction_service.list_transactions(
         session, month=month, category=category, page=page, page_size=page_size
@@ -169,3 +173,40 @@ All routes under `/api/v1/`. Version in URL, not header.
 When a breaking change is required: add `/api/v2/` routes alongside v1.
 Never remove or modify v1 routes — iOS clients may not have updated.
 Document version differences in `docs/api-reference.md`.
+
+---
+
+## Prompt Caching (Anthropic API)
+
+For AI features that send the same system prompt on every call, use
+`cache_control` to avoid re-billing the static portion each time.
+
+```python
+# services/advice_builder.py
+import anthropic
+
+def call_advice_api(system_prompt: str, user_payload: str) -> str:
+    # Lazy init — only instantiate when called, so missing API key at startup
+    # (e.g. when FEATURE_ADVICE_ENABLED=false) does not crash the application.
+    client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from environment
+    response = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4096,  # advice + forecast JSON can be substantial; 1000 is too tight
+        system=[
+            {
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral"},  # cache the static system prompt
+            }
+        ],
+        messages=[{"role": "user", "content": user_payload}],
+    )
+    return response.content[0].text
+```
+
+Rules:
+- Only cache content that does not change between calls (system prompt, persona, rules)
+- Never cache the user payload — it changes every call
+- `"ephemeral"` is currently the only supported cache type
+- Caching requires the system prompt to be at least 1024 tokens to be effective
+- ANTHROPIC_API_KEY must be in `.env`, never hardcoded — the client reads it automatically

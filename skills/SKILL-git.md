@@ -91,12 +91,16 @@ Every project should install `scripts/pre-commit-check.sh`:
 # Warns if sensitive files are staged.
 # Install: cp scripts/pre-commit-check.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 
-SENSITIVE_PATTERNS=("*.db" ".env" "salt.bin" "*.enc" "*.key" ".passphrase")
+# Uses regex patterns, not globs — \.db$ matches files ending in .db
+# ^\.env catches .env, .env.local, .env.production etc but NOT .env.example
+SENSITIVE_PATTERNS=("\.db$" "\.db-shm$" "\.db-wal$" "^\.env" "salt\.bin$" "\.enc$" "\.key$" "\.passphrase$")
 STAGED=$(git diff --cached --name-only)
+# Explicitly allow .env.example
+STAGED_FILTERED=$(echo "$STAGED" | grep -v "\.env\.example$" || true)
 FOUND=0
 
 for pattern in "${SENSITIVE_PATTERNS[@]}"; do
-  MATCHES=$(echo "$STAGED" | grep -E "$pattern" || true)
+  MATCHES=$(echo "$STAGED_FILTERED" | grep -E "$pattern" || true)
   if [ -n "$MATCHES" ]; then
     echo "WARNING: Sensitive file staged: $MATCHES"
     FOUND=1

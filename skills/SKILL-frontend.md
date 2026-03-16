@@ -82,26 +82,54 @@ Every chart must handle the case where no data exists for the selected period.
 Never render a blank canvas. Never fabricate data.
 
 ```javascript
+// Chart.js has no built-in emptyState plugin.
+// Register a custom plugin once at app startup:
+const emptyStatePlugin = {
+  id: "emptyState",
+  afterDraw(chart) {
+    // Guard: chartArea may not exist on first tick if chart hasn't laid out yet
+    if (!chart.chartArea) return;
+    const { datasets } = chart.data;
+    // A chart is empty if it has no datasets or all data values are null/undefined
+    const hasData = datasets.length > 0 &&
+      datasets.some(d => d.data && d.data.some(v => v !== null && v !== undefined));
+    if (hasData) return;
+    const { ctx, chartArea: { left, top, width, height } } = chart;
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#9CA3AF";
+    ctx.font = "14px sans-serif";
+    ctx.fillText(
+      chart.options.plugins?.emptyState?.message ?? "No data for this period",
+      left + width / 2,
+      top + height / 2
+    );
+    ctx.restore();
+  }
+};
+Chart.register(emptyStatePlugin);
+
+// data must be a Chart.js data object: { labels: [...], datasets: [...] }
+// Pass an empty object or omit to trigger the empty state.
 function renderOrEmpty(canvasId, chartConfig, data) {
   const ctx = document.getElementById(canvasId);
-  if (!data || data.length === 0) {
-    new Chart(ctx, {
-      type: chartConfig.type,
-      data: { labels: [], datasets: [] },
-      options: {
-        ...chartConfig.options,
-        plugins: {
-          emptyState: { message: "No data for this period" }
-        }
+  const hasData = data && Array.isArray(data.datasets) && data.datasets.length > 0;
+  new Chart(ctx, {
+    ...chartConfig,
+    data: hasData ? data : { labels: [], datasets: [] },
+    options: {
+      ...chartConfig.options,
+      plugins: {
+        ...chartConfig.options?.plugins,
+        emptyState: { message: "No data for this period" }
       }
-    });
-    return;
-  }
-  new Chart(ctx, { ...chartConfig, data });
+    }
+  });
 }
 ```
 
-Empty state by chart type:
+Empty state by chart type — visual treatment:
 - **Donut**: grey ring + centred label
 - **Bar**: empty axes + label centred on chart area
 - **Line**: flat x-axis only + label
@@ -111,12 +139,34 @@ Empty state by chart type:
 ## Time Range Control (Reusable Component)
 
 ```javascript
-// Presets and optional custom range pickers
-function TimeRangeControl({ onChange, defaultRange = "6m" }) {
+// Vanilla JS — initialise with a container element and callback
+function initTimeRangeControl(container, onChange, defaultRange = "6m") {
   const presets = ["6m", "12m", "24m", "ytd", "all"];
-  // Custom: from/to month pickers
-  // YoY toggle: checkbox
-  // On change: call onChange({ from, to, yoy: bool })
+  let active = defaultRange;
+  let yoy = false;
+
+  function render() {
+    // Use class-based selectors scoped to container — no global IDs,
+    // so multiple controls on the same page don't conflict.
+    container.innerHTML = presets.map(p =>
+      `<button class="range-btn${p === active ? " active" : ""}" data-range="${p}">${p.toUpperCase()}</button>`
+    ).join("") +
+    `<label><input type="checkbox" class="yoy-toggle"${yoy ? " checked" : ""}> vs last year</label>`;
+
+    container.querySelectorAll(".range-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        active = btn.dataset.range;
+        render();
+        onChange({ range: active, yoy });
+      });
+    });
+    container.querySelector(".yoy-toggle").addEventListener("change", e => {
+      yoy = e.target.checked;
+      onChange({ range: active, yoy });
+    });
+  }
+
+  render();
 }
 ```
 
@@ -181,6 +231,16 @@ const aiForecastDataset = {
 
 Ghost marker — when actual data arrives for a projected period:
 ```javascript
+// ghostPoints items must be objects with {x, y, forecast, actual}
+// so the tooltip callback can access both values.
+// x = month label, y = actual value (plotted position), forecast/actual for tooltip.
+const ghostPoints = actualMonths.map(month => ({
+  x: month.label,
+  y: month.actual,
+  forecast: month.forecast,  // what was projected
+  actual: month.actual,      // what really happened
+}));
+
 const ghostDataset = {
   label: "_ghost",             // underscore prefix = hidden from legend
   data: ghostPoints,
@@ -211,18 +271,24 @@ Triggered by `window.print()`. Outputs to PDF via browser "Save as PDF".
 
 **Chart capture at print time:**
 ```javascript
-// Render all print charts fresh into a hidden staging div at print time
-// Independent of whatever view is currently displayed
+// Render all print charts fresh into a hidden staging div at print time.
+// Independent of whatever view is currently displayed.
+//
+// Safari note: requestAnimationFrame does not reliably fire before the print
+// dialog opens. Instead, render charts synchronously and use chart.update()
+// with 'none' animation so toDataURL() captures a complete frame.
 function capturePrintCharts() {
   const staging = document.getElementById("print-canvas-staging");
   staging.style.display = "block";
-  // Render charts fresh here...
-  requestAnimationFrame(() => {
-    staging.querySelectorAll("canvas").forEach(canvas => {
-      const img = document.createElement("img");
-      img.src = canvas.toDataURL("image/png");
-      canvas.replaceWith(img);
-    });
+
+  // Render each print chart with animation disabled, then capture immediately
+  staging.querySelectorAll("canvas[data-print-chart]").forEach(canvas => {
+    const chartId = canvas.dataset.printChart;
+    const chartInstance = getPrintChart(chartId);  // renders with { animation: false }
+    chartInstance.update("none");  // force synchronous paint
+    const img = document.createElement("img");
+    img.src = canvas.toDataURL("image/png");
+    canvas.replaceWith(img);
   });
 }
 
