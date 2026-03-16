@@ -1,5 +1,4 @@
 # .claude — Personal Claude Code Operating System
-# https://github.com/luckylarryschopshop/.claude
 #
 # Clone directly to ~/.claude — Claude Code reads this directory natively.
 # No symlinks. No setup scripts. Just clone and go.
@@ -15,8 +14,8 @@
     SKILL-tdd.md            — test-first discipline, test ID format, fixtures
     SKILL-git.md            — conventional commits, push cadence, pre-commit
     SKILL-logging.md        — human-readable logs, error format, sidecars
-    SKILL-api-design.md     — OpenAPI, pagination, route standards, iOS contract
-    SKILL-frontend.md       — Chart.js, colours, print, partner view
+    SKILL-api-design.md     — OpenAPI, pagination, route standards
+    SKILL-frontend.md       — charts, print layout, responsive UI
     SKILL-security.md       — encryption, PII policy, secrets, gitignore
   templates/
     PROJECT-CLAUDE.md       — starter template for new projects
@@ -26,7 +25,7 @@
 
 ```bash
 # Clone directly to ~/.claude — Claude Code reads this natively
-git clone https://github.com/luckylarryschopshop/.claude ~/.claude
+git clone https://github.com/[your-username]/.claude ~/.claude
 
 # Verify Claude Code picks it up
 cat ~/.claude/CLAUDE.md
@@ -81,7 +80,6 @@ description: When to load this and what it covers.
 SKILL
 
 # Add it to the skills table in CLAUDE.md
-# Commit and push — available to all projects immediately
 git add skills/SKILL-myskill.md CLAUDE.md
 git commit -m "feat: add SKILL-myskill"
 git push
@@ -92,14 +90,13 @@ git push
 Skills are loaded on demand — never all at once.
 Each phase in a project's CLAUDE.md lists which skills to load.
 
-| What | Tokens | When loaded |
+| What | Approx tokens | When loaded |
 |---|---|---|
-| Global CLAUDE.md | ~500 | Every session start (cached after first read) |
+| Global CLAUDE.md | ~500 | Every session start |
 | Project CLAUDE.md | ~300–500 | Every session start |
 | Each skill file | ~300–600 | Once per phase, on demand |
-| Keel master prompt | ~2,800 | Every session start |
 
-Compare to a monolithic prompt: 8,400 tokens loaded every turn.
+Compare to a monolithic prompt: thousands of tokens loaded every turn.
 
 ## Skill Override Precedence
 

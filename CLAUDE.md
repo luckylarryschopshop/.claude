@@ -1,7 +1,6 @@
 # Global Claude Behaviour
 # Applies to ALL projects. Project CLAUDE.md overrides specific sections.
 # Location: ~/.claude/CLAUDE.md
-# Skills repo: https://github.com/luckylarryschopshop/.claude (symlinked)
 
 ---
 
@@ -77,7 +76,7 @@
 Stop building and notify the user when:
 
 1. **Usage limit approaching**
-   → Complete current atomic unit of work (current function or test — not the phase)
+   → Complete current atomic unit of work (current function or test — not the whole phase)
    → Full handoff: update project CLAUDE.md + HANDOFF.md
    → Commit and push all work
    → Notify: "SESSION LIMIT REACHED. [Phase/task]. Committed [hash]. Resume by re-reading CLAUDE.md."
@@ -106,8 +105,8 @@ Do not load all skills at once — load only what the current task requires.
 | `~/.claude/skills/SKILL-workflow.md` | Planning a multi-phase build or complex task |
 | `~/.claude/skills/SKILL-code-quality.md` | Writing any service, domain function, or non-trivial code |
 | `~/.claude/skills/SKILL-tdd.md` | Writing tests or implementing against a test spec |
-| `~/.claude/skills/SKILL-git.md` | Committing, branching, or setting up CI |
-| `~/.claude/skills/SKILL-logging.md` | Adding logging, error handling, or .error sidecars |
+| `~/.claude/skills/SKILL-git.md` | Committing, branching, or setting up a repository |
+| `~/.claude/skills/SKILL-logging.md` | Adding logging, error handling, or failure reporting |
 | `~/.claude/skills/SKILL-api-design.md` | Writing API routes, OpenAPI spec, or pagination |
 | `~/.claude/skills/SKILL-frontend.md` | Building any browser UI, charts, or print layout |
 | `~/.claude/skills/SKILL-security.md` | Encryption, secrets, gitignore, PII handling |
