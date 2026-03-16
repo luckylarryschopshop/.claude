@@ -61,7 +61,7 @@ Generate and commit `docs/openapi.json` at the end of the API phase:
 ```python
 # scripts/generate_openapi.py
 """
-Generates docs/openapi.json from the live FastAPI app.
+Generates docs/openapi.json from the live app.
 Validates that all routes have operation_id and response_model.
 Exits with error if any route is missing either — CI enforcer.
 """
@@ -123,7 +123,7 @@ Standard status codes:
 - `400` — Invalid request (malformed input, validation failure)
 - `404` — Resource not found
 - `409` — Conflict (duplicate import, already exists)
-- `422` — Unprocessable entity (Pydantic validation — FastAPI default)
+- `422` — Unprocessable entity (input validation failure)
 - `501` — Not implemented (stub endpoints)
 - `500` — Unexpected server error (log it, return generic message)
 

@@ -38,8 +38,8 @@ in any language by reading the domain layer alone.
 ## OOP vs Functional — Pragmatic Rule
 
 **Use a class when:**
-- Managing state across multiple operations (e.g. a normaliser that caches a lookup table per session)
-- Representing an entity with identity (Transaction, Budget, User)
+- Managing state across multiple operations (e.g. a service that caches a lookup table per session)
+- Representing an entity with identity (User, Order, Account)
 - Dependency injection makes testing significantly cleaner
 
 **Use a pure function when:**
@@ -49,12 +49,12 @@ in any language by reading the domain layer alone.
 
 **Document the choice inline — always:**
 ```python
-# Class: caches alias table across import session. Pure logic in domain/merchant.py.
-class MerchantNormaliser:
+# Class: caches lookup table across processing session. Pure logic in domain/matching.py.
+class RecordMatcher:
     ...
 
 # Function: single transformation, no session state needed.
-def match_provision(tx: Transaction, provisions: list[Provision]) -> ProvisionMatch | None:
+def compute_status(value: float, limit: float) -> StatusResult:
     ...
 ```
 
@@ -73,40 +73,40 @@ All domain functions must:
 4. Have a docstring written as a **language-agnostic specification**:
 
 ```python
-def compute_dedup_hash(
-    date: str,          # ISO format: YYYY-MM-DD
-    merchant: str,      # canonical name if known, else raw string
-    amount: float,      # signed: negative = debit, positive = credit
+def compute_hash(
+    date: str,       # ISO format: YYYY-MM-DD
+    key: str,        # normalised identifier string
+    amount: float,   # signed float
 ) -> str:
     """
-    Compute a stable deduplication hash for a transaction.
+    Compute a stable hash for deduplication.
 
     Algorithm:
-      1. Lowercase and strip the merchant string
+      1. Lowercase and strip the key string
       2. Format amount to 2 decimal places with explicit sign: "-15.99" or "+5.00"
-      3. Concatenate as: "{date}|{merchant}|{amount}"
+      3. Concatenate as: "{date}|{key}|{amount}"
       4. Return SHA-256 hex digest of the UTF-8 encoded string
 
-    This specification is language-agnostic. A Swift or Kotlin implementation
-    must produce identical hashes for identical inputs.
+    This specification is language-agnostic. Implementations in Swift,
+    Kotlin, or TypeScript must produce identical hashes for identical inputs.
 
     Examples:
-      compute_dedup_hash("2025-01-15", "netflix", -15.99) → "a3f8b2c1..."
+      compute_hash("2025-01-15", "acme corp", -15.99) → deterministic 64-char hex
     """
 ```
 
 5. Raise ValueError (not return None) for invalid inputs, with a clear message
-6. Have tests for: happy path, invalid input, each edge case in the spec
+6. Have tests for: happy path, invalid input, each documented edge case
 
 ---
 
 ## Type Safety
 
-- Complete type annotations on all functions (Python 3.11+ / TypeScript strict / Swift)
+- Complete type annotations on all functions
 - No bare `Any` types
 - API request/response models: use a validation library (Pydantic v2 / Zod / Codable)
 - Validation models are API-layer only — never pass them into domain functions
-- Run type checker in strict mode on domain/core layer: `mypy --strict` / `tsc --strict`
+- Run type checker in strict mode on domain/core layer
 - Type checker must pass before a phase is marked complete
 
 ---
@@ -116,7 +116,7 @@ def compute_dedup_hash(
 - Domain data structures are frozen/immutable after creation
 - Services create new instances rather than mutating existing ones
 - The only mutable objects are ORM/DB model instances — they never leave the services layer
-- Prefer `const` / `let` over `var`. Prefer value types over reference types where the language allows.
+- Prefer `const` / `let` over `var`. Prefer value types over reference types where possible.
 
 ---
 
@@ -128,8 +128,7 @@ def compute_dedup_hash(
   If a query could produce N+1, flag it with a comment and fix it before committing.
 - Pagination required on all list endpoints:
   Response shape: `{ items, total, page, page_size, pages }`
-- Bulk operations (re-categorise, retroactive updates) must be a single UPDATE query,
-  not a Python/Swift loop of individual updates.
+- Bulk operations must be a single UPDATE/INSERT query, not a loop of individual operations.
 - Stream large files row-by-row — do not load entire file into memory.
 - Domain functions prefer generators over lists where the caller iterates.
 
@@ -139,12 +138,12 @@ def compute_dedup_hash(
 
 | What | Convention | Examples |
 |---|---|---|
-| Functions | verb_noun | `compute_hash`, `apply_rules`, `match_provision` |
-| Classes | NounNoun | `MerchantNormaliser`, `IngestPipeline` |
-| Constants | UPPER_SNAKE | `SILENT_MERGE_THRESHOLD`, `DEFAULT_CHUNK_SIZE` |
-| Files | snake_case | `merchant_normaliser.py`, `dedup.py` |
-| Tests | test_[module]_[what]_[condition] | `test_dedup_same_row_twice_returns_one_record` |
-| Swift types | UpperCamelCase | `MerchantAlias`, `TransactionStore` |
+| Functions | verb_noun | `compute_hash`, `apply_rules`, `validate_record` |
+| Classes | NounNoun | `RecordMatcher`, `DataPipeline`, `StatusCalculator` |
+| Constants | UPPER_SNAKE | `MATCH_THRESHOLD`, `DEFAULT_CHUNK_SIZE`, `MAX_RETRIES` |
+| Files | snake_case | `record_matcher.py`, `status_calculator.py` |
+| Tests | test_[module]_[what]_[condition] | `test_hash_same_inputs_returns_same_value` |
+| Swift types | UpperCamelCase | `RecordStore`, `StatusResult` |
 | Swift functions | lowerCamelCase | `computeHash`, `applyRules` |
 
 ---
@@ -155,26 +154,26 @@ Comment WHY, not WHAT. The code shows what — comments explain intent.
 
 ```python
 # Good: explains a non-obvious decision
-# Skip manual overrides — user decisions take priority over rule-based assignment
-if tx.category_source == "manual":
+# Skip manual overrides — user decisions take priority over automated rules
+if record.source == "manual":
     continue
 
 # Bad: restates the code
-# Loop through transactions
-for tx in transactions:
+# Loop through records
+for record in records:
 ```
 
 Required for:
 - All threshold values and magic numbers
-- All algorithm choices (why this algorithm, not another)
+- All algorithm choices (why this one, not another)
 - All regex patterns (what they match and why)
 - Any non-obvious data transformation
 - Any place where the obvious implementation was rejected
 
 Constants always have an explanatory comment:
 ```python
-# Minimum confidence to silently apply canonical name without user review.
-# Conservative — short financial strings (e.g. "AMZN") score lower than they should.
+# Minimum confidence score to apply a match automatically without user review.
+# Set conservatively to avoid incorrect merges on short or ambiguous strings.
 SILENT_MERGE_THRESHOLD = 85.0
 ```
 

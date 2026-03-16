@@ -14,13 +14,12 @@ beyond what the user explicitly enters themselves.
 
 - No analytics, telemetry, crash reporting, or usage tracking — ever
 - No account creation, email address, or identity required to use the app
-- Transaction data imported from files: stored locally only, encrypted at rest,
-  never sent to any remote server
+- User data: stored locally only, encrypted at rest, never sent to remote servers
 - External API calls (e.g. AI services): send only anonymised aggregates —
-  category totals, percentages, trend direction — never raw descriptions
-- Sync servers (if any): store only opaque encrypted blobs — never plaintext data
+  never raw user data or identifying details
+- Sync servers (if any): store only opaque encrypted blobs — never plaintext
 
-This policy applies to the open-source version and any commercial version.
+This policy applies to both open-source and any commercial version.
 Document it in `README.md` under "Privacy" and in `PRIVACY.md`.
 
 ---
@@ -41,9 +40,8 @@ All data is stored in an encrypted database on your own device.
 Nothing is sent to any server without your explicit action.
 
 ## Does [App] share data with third parties?
-No. The only external service used is [e.g. the AI advice feature],
-which receives only anonymised summaries (category totals, not
-individual transactions). Your raw financial data is never shared.
+No. The only external service used is [e.g. the AI feature],
+which receives only anonymised summaries. Your raw data is never shared.
 
 ## Is there telemetry or analytics?
 No. [App] contains no analytics, crash reporting, or usage tracking.
@@ -57,14 +55,14 @@ store only encrypted blobs that it cannot read. Keys never leave your device.
 
 ## Encryption Standards
 
-**Preferred: SQLCipher**
+**Preferred: SQLCipher** (when using SQLite)
 - AES-256-CBC encryption of SQLite database at rest
 - Passphrase set on first run, required each launch
 - Key held in memory only — never written to disk
 
-**Fallback: Envelope encryption**
+**Alternative: Envelope encryption**
 - Derive 256-bit key from passphrase using Argon2id
-- Store salt in `salt.bin` (gitignored, stays on device)
+- Store salt in a local file (gitignored, stays on device)
 - Never store the raw passphrase or derived key on disk
 - Re-derive key from passphrase on each launch
 
@@ -76,8 +74,7 @@ store only encrypted blobs that it cannot read. Keys never leave your device.
 **Passphrase rules:**
 - Set on first run (no default, no empty passphrase allowed)
 - Required on every launch before any data is accessible
-- Never stored anywhere — not in env, not in config, not in keychain by default
-  (keychain is opt-in for convenience, never default)
+- Never stored anywhere — not in env, not in config
 - Reset requires re-importing from backup
 
 ---
@@ -88,23 +85,18 @@ store only encrypted blobs that it cannot read. Keys never leave your device.
 - Never hardcode API keys, passwords, or secrets
 - All secrets in `.env` (gitignored)
 - `.env.example` committed with placeholder values and explanatory comments
-- Load from environment: `os.getenv("ANTHROPIC_API_KEY")` — fail loudly if missing when needed
+- Load from environment — fail loudly if a required secret is missing
 
 **`.env.example` format:**
 ```bash
 # API Keys — optional features
-# Required only if FEATURE_ADVICE_ENABLED=true
-# Get your key at: https://platform.anthropic.com
-ANTHROPIC_API_KEY=your_key_here
-
-# Encryption
-# Leave blank — set on first run via the app's passphrase prompt
-# Never set this here — it would be stored in plaintext
-DB_PASSPHRASE=
+# Required only if the relevant feature flag is enabled
+# Get your key at: https://[provider]
+API_KEY=your_key_here
 
 # Feature flags — all false by default
-FEATURE_ADVICE_ENABLED=false
-FEATURE_FORECAST_ENABLED=false
+FEATURE_X_ENABLED=false
+FEATURE_Y_ENABLED=false
 ```
 
 ---
@@ -131,23 +123,24 @@ salt.bin
 *.env.*
 !.env.example
 
-# User data
-inbox/
-processed/
-failed/
+# Logs
 logs/
-
-# Personal config (may contain merchant names, amounts)
-config/category_rules.yaml
-config/provisions.yaml
-!config/category_rules.example.yaml
-!config/provisions.example.yaml
 
 # Backups
 *.tar.gz
 *.tar.gz.enc
 backups/
+
+# Build artifacts
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+.DS_Store
 ```
+
+Add project-specific sensitive files (e.g. config files with personal data)
+to the project's `.gitignore` and to the pre-commit hook patterns.
 
 ---
 
@@ -157,9 +150,9 @@ backups/
 #!/bin/bash
 # Blocks commits containing sensitive files.
 # Install: cp scripts/pre-commit-check.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Add project-specific patterns to BLOCKED array below.
 
-BLOCKED=("*.db" ".env" "category_rules.yaml" "provisions.yaml"
-         "salt.bin" "*.enc" "*.key" ".passphrase")
+BLOCKED=("*.db" ".env" "salt.bin" "*.enc" "*.key" ".passphrase")
 STAGED=$(git diff --cached --name-only)
 FAIL=0
 
@@ -183,13 +176,13 @@ For any sync feature (LAN, file export, remote):
 
 **Stage 1 — LAN API:**
 - Only accessible on local network
-- No auth required (trust-based household use)
+- No auth required (trust-based local use)
 - Auth middleware stub in place for future activation
 
 **Stage 2 — Encrypted file export:**
 - Export encrypted with AES-256-GCM using the user's passphrase
 - File is useless without the passphrase
-- Transport (AirDrop, USB, cloud storage) does not need to be trusted
+- Transport method does not need to be trusted
 
 **Stage 3 — Remote sync:**
 - End-to-end encrypted — server stores opaque blobs only
