@@ -107,6 +107,42 @@ Goal: [one sentence]
 **Consequences**: [what this enables or constrains]
 ```
 
+### HANDOFF.md format
+```markdown
+# Handoff — [Date] — Phase [N]
+
+## What was built this session
+[Bullet list of files created or meaningfully changed]
+- `path/to/file.py` — [what it does]
+- `tests/test_module.py` — [test IDs added: X-01 through X-06]
+
+## What is working and verified
+[Exactly what can be demonstrated to work right now]
+- Tests passing: [list test IDs]
+- Manual verification: [what was tested by hand]
+- mypy status: [clean / N errors in domain/]
+
+## What is next (first task of next phase)
+[Single specific task — not a phase summary]
+Example: "Write test skeletons for NORM-01 through NORM-06 in test_normaliser.py"
+
+## Gotchas and non-obvious decisions
+[Things that would trip up someone resuming cold]
+- [gotcha 1]
+- [gotcha 2]
+
+## Exact files changed this session
+[Complete list — used by context loop to know what to load next session]
+- created: [file]
+- modified: [file]
+- deleted: [file]
+
+## Blocking questions (if any)
+[If session ended on a blocker, state it clearly here]
+BLOCKING: [exact question]
+Reason: [why this cannot be decided without user input]
+```
+
 ---
 
 ## Memory Protocol

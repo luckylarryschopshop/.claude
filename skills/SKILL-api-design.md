@@ -70,10 +70,14 @@ from app.main import app
 
 missing = []
 for route in app.routes:
-    if hasattr(route, "operation_id") and not route.operation_id:
-        missing.append(f"Missing operation_id: {route.path} [{route.methods}]")
-    if hasattr(route, "response_model") and not route.response_model:
-        missing.append(f"Missing response_model: {route.path} [{route.methods}]")
+    if not hasattr(route, "methods"):
+        continue  # skip non-HTTP routes (websockets, mounts)
+    op_id = getattr(route, "operation_id", None)
+    response_model = getattr(route, "response_model", None)
+    if not op_id:
+        missing.append(f"Missing operation_id: {route.path} {list(route.methods)}")
+    if not response_model:
+        missing.append(f"Missing response_model: {route.path} {list(route.methods)}")
 
 if missing:
     for m in missing: print(m)
