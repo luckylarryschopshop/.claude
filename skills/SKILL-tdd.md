@@ -55,12 +55,16 @@ Where TYPE is:
 
 Examples: `HASH-DOMAIN-01`, `IMPORT-03`, `STATUS-DOMAIN-02`
 
-Every test function references its ID in a comment:
+Every test function references its ID as the **first comment inside the body**:
 ```python
 def test_hash_same_inputs_returns_same_value():
     # HASH-DOMAIN-01
     ...
 ```
+
+This comment is mandatory even when the ID is in the function name.
+The function name can be abbreviated — the comment is the canonical reference.
+Do not skip this in any phase, including API-layer tests.
 
 ---
 
@@ -147,6 +151,28 @@ def test_import_duplicate_row_skipped(db_session, sample_file):
     count = db_session.query(Record).count()
     assert count == EXPECTED_ROWS_IN_SAMPLE
 ```
+
+---
+
+## In-Memory SQLite + FastAPI TestClient
+
+When using `sqlite://` (in-memory) with FastAPI's TestClient, always use `StaticPool`.
+The TestClient runs route handlers in a separate thread; the default pool opens a new
+connection per thread, giving that thread an empty database.
+
+```python
+# conftest.py
+from sqlalchemy.pool import StaticPool
+
+engine = create_engine(
+    "sqlite://",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+```
+
+Without this: all DB-backed HTTP tests fail with `OperationalError: no such table`.
+Direct `db_session` tests (same thread) will pass — masking the bug until HTTP tests run.
 
 ---
 

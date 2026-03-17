@@ -65,34 +65,65 @@ Generate and commit `docs/openapi.json` at the end of the API phase:
 ```python
 # scripts/generate_openapi.py
 """
-Generates docs/openapi.json from the live app.
-Validates that all routes have operation_id and response_model.
-Exits with error if any route is missing either — CI enforcer.
+Generate docs/openapi.json. Validates operationId + 200 response schema on every route.
+Exits 1 if any route fails either check.
+
+Add to sys.path so the script is runnable directly (python backend/scripts/generate_openapi.py)
+without needing PYTHONPATH set externally.
 """
 import json, sys
-from app.main import app
+from pathlib import Path
 
-missing = []
-for route in app.routes:
-    if not hasattr(route, "methods"):
-        continue  # skip non-HTTP routes (websockets, mounts)
-    op_id = getattr(route, "operation_id", None)
-    response_model = getattr(route, "response_model", None)
-    if not op_id:
-        missing.append(f"Missing operation_id: {route.path} {list(route.methods)}")
-    if not response_model:
-        missing.append(f"Missing response_model: {route.path} {list(route.methods)}")
+_project_root = Path(__file__).parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
-if missing:
-    for m in missing: print(m)
+from backend.app.main import app  # noqa: E402
+
+schema = app.openapi()
+errors = []
+for path, methods in schema.get("paths", {}).items():
+    for method, op in methods.items():
+        if method not in ("get", "post", "put", "patch", "delete"):
+            continue
+        if "operationId" not in op:
+            errors.append(f"Missing operationId: {method.upper()} {path}")
+        content = op.get("responses", {}).get("200", {}).get("content", {})
+        if not content:
+            errors.append(f"Missing response_model: {method.upper()} {path}")
+
+if errors:
+    for e in errors: print(e)
     sys.exit(1)
 
-with open("docs/openapi.json", "w") as f:
-    json.dump(app.openapi(), f, indent=2)
-print(f"openapi.json generated — {len(app.routes)} routes documented")
+out = Path(__file__).parent.parent.parent / "docs" / "openapi.json"
+out.parent.mkdir(parents=True, exist_ok=True)
+out.write_text(json.dumps(schema, indent=2))
+print(f"openapi.json written — {len(schema.get('paths', {}))} paths")
 ```
 
+Key points:
+- Use `schema["paths"]` (JSON introspection) not `app.routes` attribute access. FastAPI
+  may rewrite operation metadata during schema generation — the JSON result is authoritative.
+- Set `sys.path` explicitly so the script is runnable directly without `PYTHONPATH`.
+
 This script runs in CI and blocks merges if any route is undocumented.
+
+### Pydantic v2: aliasing reserved words in JSON output
+
+When a response field must be named a Python keyword (e.g. `global`):
+- Use `Field(serialization_alias="global")` on the field
+- Add `model_config = {"populate_by_name": True}` on the model
+- Add `response_model_by_alias=True` on the route decorator
+
+```python
+class BudgetStatusOut(BaseModel):
+    global_status: BudgetStatusItem = Field(serialization_alias="global")
+    model_config = {"populate_by_name": True}
+
+@router.get("/budget/status", response_model=BudgetStatusOut,
+            response_model_by_alias=True, ...)
+```
 
 ---
 
