@@ -146,7 +146,29 @@ def configure_logging():
     Must be called before any other component is imported or started.
     """
     level = logging.DEBUG if os.getenv("LOG_LEVEL") == "DEBUG" else logging.INFO
-    ...
+
+    handler = RotatingFileHandler(
+        "logs/app.log",
+        maxBytes=10 * 1024 * 1024,  # 10MB per file
+        backupCount=5,
+    )
+    handler.setFormatter(logging.Formatter(
+        "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    ))
+    handler.setLevel(level)
+
+    console = logging.StreamHandler()
+    console.setFormatter(logging.Formatter(
+        "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    ))
+    console.setLevel(level)
+
+    root = logging.getLogger()
+    root.setLevel(level)
+    root.addHandler(handler)
+    root.addHandler(console)
 ```
 
 Always log application start and stop:
