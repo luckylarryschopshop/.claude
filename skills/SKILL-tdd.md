@@ -176,6 +176,22 @@ Direct `db_session` tests (same thread) will pass — masking the bug until HTTP
 
 ---
 
+## Playwright Class Membership Assertions
+
+**`to_have_class(lambda)` is NOT supported** — throws "value must be a string or regular expression".
+
+Use `get_attribute` instead:
+
+```python
+cls = locator.get_attribute("class") or ""
+assert "target-class" in cls
+```
+
+`to_have_class` accepts only strings or compiled regexes. Callables silently fail or raise
+at runtime — do not use them.
+
+---
+
 ## What Not to Test
 
 - Framework boilerplate (routing, session management)
