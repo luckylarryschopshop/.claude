@@ -340,3 +340,86 @@ When building a view intended for less technical users:
 - Plain-English summaries generated from data (avoid jargon)
 - Maximum 3 screens — keep navigation minimal
 - No raw data tables — use charts, large numbers, and short sentences
+
+---
+
+## Core Web Vitals (Performance Targets)
+
+Google's official user-experience metrics. These are the thresholds to design and test against.
+
+| Metric | Good | Needs improvement | Poor | What it measures |
+|--------|------|------------------|------|------------------|
+| **LCP** (Largest Contentful Paint) | ≤ 2.5s | 2.5–4s | > 4s | Loading performance — when is the main content visible? |
+| **INP** (Interaction to Next Paint) | ≤ 200ms | 200–500ms | > 500ms | Responsiveness — how fast does the page react to input? |
+| **CLS** (Cumulative Layout Shift) | ≤ 0.1 | 0.1–0.25 | > 0.25 | Visual stability — does content jump around while loading? |
+
+**How to measure:**
+- Dev: Chrome DevTools → Performance tab → record page load
+- CI: `lighthouse-ci` against staging (`lhci autorun --collect.url=https://staging.example.com`)
+- Production: Web Vitals JS library reports field data
+
+**Common causes and fixes:**
+
+LCP too slow:
+- Hero image not preloaded → add `<link rel="preload" as="image" href="...">` for above-fold images
+- Render-blocking JS → move scripts to end of body or add `defer`
+- Slow server response → add CDN, improve TTFB
+
+INP too slow:
+- Long main-thread tasks → break up with `setTimeout(fn, 0)` or `scheduler.yield()`
+- Expensive event handlers → debounce/throttle input handlers
+
+CLS too high:
+- Images without explicit dimensions → always set `width` and `height` on `<img>`
+- Late-loading fonts causing text reflow → use `font-display: swap` + preload
+- Dynamic content injected above existing content → reserve space with min-height
+
+---
+
+## State Management Decision Matrix
+
+Choose the right state location before writing any component state.
+
+| State type | Where it lives | Example |
+|------------|---------------|---------|
+| **Local UI state** | Component local (`useState`, `ref`) | Modal open/closed, form input value, hover state |
+| **Shared local state** | Lifted to nearest common parent | Which tab is active when two sibling components need it |
+| **Server cache** | React Query / SWR / TanStack Query | API response data, pagination, background refetch |
+| **Global client state** | Zustand / Pinia / Redux (only if needed) | Auth user, shopping cart, notification queue |
+| **URL state** | Query params / router | Active filters, search terms, selected IDs — anything shareable via link |
+| **Persistent state** | localStorage / sessionStorage | User preferences, draft form data across sessions |
+
+**Escalation rule:** start with local state. Only escalate when:
+1. Two or more non-parent/child components need the same state → lift or use server cache
+2. State must survive page reload → URL state or localStorage
+3. State involves async server data → server cache (not global state)
+
+**Avoid:** putting server data in global state (React Query handles stale/loading/error better).
+**Avoid:** URL-encoding ephemeral UI state (hover, tooltip position).
+
+---
+
+## Bundle Size and Code Splitting
+
+Every added dependency has a size cost visible to users on slow connections.
+
+**Before adding a library:** check `bundlephobia.com` for size + tree-shakability.
+
+**Code splitting triggers:**
+- Route-based: each page/route is a separate chunk (React lazy + Suspense, Vue async components)
+- Feature-based: heavy features not used on initial load (rich text editor, chart library, map)
+- Conditional: admin-only features split from user-facing bundle
+
+```javascript
+// Route-based lazy loading
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
+const Dashboard  = lazy(() => import('./pages/Dashboard'));
+
+// Heavy component split
+const RichEditor = lazy(() => import('./components/RichEditor'));
+```
+
+**Bundle analysis:**
+- `vite-bundle-visualizer` / `webpack-bundle-analyzer` — run after build, inspect chunk sizes
+- Flag any single chunk > 250KB (parsed) — it should be split or the dependency replaced
+- Flag any dependency that is not tree-shaken (entire library in bundle when only one function used)

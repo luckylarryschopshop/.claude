@@ -129,8 +129,10 @@ class BudgetStatusOut(BaseModel):
 
 ## Pagination
 
-Required on all list endpoints. Standard response envelope:
+Required on all list endpoints. Choose strategy based on dataset and UI needs —
+see `SKILL-backend-patterns` for the full cursor vs offset decision matrix.
 
+**Offset pagination** (admin UIs, bounded datasets, "jump to page N"):
 ```python
 from typing import Generic, TypeVar
 T = TypeVar("T")
@@ -142,32 +144,66 @@ class PaginatedResponse(BaseModel, Generic[T]):
     page_size: int = Field(..., description="Items per page")
     pages: int = Field(..., description="Total pages")
 ```
-
 Query params: `page` (default 1), `page_size` (default 50, max 200).
-DB query must use LIMIT/OFFSET — never load all records.
+
+**Cursor pagination** (feeds, large datasets >10k rows, infinite scroll):
+```python
+class CursorPaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    next_cursor: str | None = Field(None, description="Opaque cursor — pass as ?after=")
+    has_more: bool
+    limit: int
+```
+Query params: `after` (opaque cursor), `limit` (default 20, max 100).
+Cursor is base64-encoded position — never expose raw DB IDs.
+
+DB query must use LIMIT — never load all records regardless of strategy.
 
 ---
 
-## Error Response Format
+## Error Response Format — RFC 7807
 
-All errors return a consistent shape:
+All errors follow RFC 7807 `application/problem+json`. No ad-hoc error schemas.
 
 ```python
-class ErrorResponse(BaseModel):
-    error: str = Field(..., description="Machine-readable error code",
-                        example="duplicate_import")
-    message: str = Field(..., description="Human-readable description",
-                          example="This file has already been imported")
-    detail: dict | None = Field(None, description="Additional context")
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+class ProblemDetail(BaseModel):
+    type: str = Field(..., description="URI identifying the error class",
+                      example="https://example.com/errors/not-found")
+    title: str = Field(..., description="Human-readable, stable (does not change per request)",
+                       example="Resource Not Found")
+    status: int = Field(..., description="HTTP status code", example=404)
+    detail: str = Field(..., description="Instance-specific explanation",
+                        example="Transaction with id 'abc-123' does not exist")
+    instance: str = Field(..., description="The request URI", example="/api/v1/transactions/abc-123")
+    errors: list[dict] | None = Field(None, description="Field-level detail for validation errors")
+
+# FastAPI handler example
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+    return JSONResponse(
+        status_code=422,
+        media_type="application/problem+json",
+        content={
+            "type": "https://example.com/errors/validation-failed",
+            "title": "Validation Failed",
+            "status": 422,
+            "detail": str(exc),
+            "instance": str(request.url),
+        }
+    )
 ```
 
 Standard status codes:
-- `400` — Invalid request (malformed input, validation failure)
+- `400` — Malformed request (unparseable body, wrong content-type)
 - `404` — Resource not found
-- `409` — Conflict (duplicate import, already exists)
-- `422` — Unprocessable entity (input validation failure)
-- `501` — Not implemented (stub endpoints)
-- `500` — Unexpected server error (log it, return generic message)
+- `409` — Conflict with existing state (duplicate, already exists)
+- `422` — Semantic validation failure (parseable but invalid values)
+- `429` — Rate limit exceeded (always include `Retry-After` header)
+- `500` — Unexpected server error (log it; return generic `detail`, never stack trace)
+- `502` — Upstream dependency failed
 
 Never return raw exception messages to the client.
 Internal error details go to the log, not the response.

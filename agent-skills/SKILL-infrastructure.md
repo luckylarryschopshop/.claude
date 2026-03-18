@@ -84,3 +84,108 @@ Every change to a production system must:
 | Service down | `systemctl status [service]`, `journalctl -u [service] -n 100` |
 | Network unreachable | `ping`, `traceroute`, `ss -tlnp`, `iptables -L -n -v` |
 | High load | `uptime`, `iostat -x 1 5`, `iotop` |
+
+---
+
+### Incident Response Runbook Template
+
+Every service in production must have a runbook before going live. Write it before the incident,
+not during.
+
+```markdown
+# Runbook: [Service Name]
+
+## Service Overview
+- Purpose: [one sentence]
+- Owner: [team/person]
+- On-call: [rotation or contact]
+- Repo: [link]
+- Dashboard: [Grafana/CloudWatch link]
+
+## Severity Levels
+| Level | Definition | Response time | Escalate to |
+|-------|-----------|---------------|-------------|
+| P1 | Complete outage or data loss | 15 min | Engineering lead + CTO |
+| P2 | Degraded performance or partial outage | 1 hour | Engineering lead |
+| P3 | Non-critical feature broken | Next business day | Team |
+
+## Comms Template (P1/P2)
+Post to #incidents every 30 minutes:
+> [HH:MM] [Service]: [what's broken] | Impact: [# users affected] | Status: investigating / mitigating / resolved | Next update: [HH:MM]
+
+## Common Failure Scenarios
+### [Scenario: e.g. DB connection pool exhausted]
+- Symptoms: [what alerts fire, what users see]
+- Diagnose: [commands to run]
+- Mitigate: [immediate actions to restore service]
+- Fix: [root cause resolution]
+- Rollback: [how to revert if fix makes it worse]
+
+## Post-Incident Requirements
+Within 24h of P1 resolution: write post-mortem to `docs/post-mortems/YYYY-MM-DD-[title].md`
+Post-mortem sections: Timeline, Root Cause, Contributing Factors, Impact, Remediation Items
+Post-mortems are blameless — focus on systems, not individuals.
+```
+
+---
+
+### CIS Benchmarks Reference
+
+The Center for Internet Security publishes hardening standards for every major OS and platform.
+Use as a compliance checklist before production deployment.
+
+**Level 1 controls (apply to all servers):**
+- Disable unused services and network protocols
+- Set file permissions on sensitive config files (sshd_config, sudoers: 600)
+- Configure password policies (even if SSH-key-only: set minimum for local accounts)
+- Enable audit logging (`auditd`) for auth, sudo, and file modifications
+- Disable USB storage if physical access is a risk vector
+- Ensure `/etc/cron.allow` exists and is restricted
+
+**Quick CIS-aligned audit (Lynis):**
+```bash
+apt install lynis
+lynis audit system
+# Review hardening index score; address any HIGH findings before prod
+```
+
+**CIS Benchmark documents:** downloadable free from cisecurity.org — reference the specific
+benchmark for your OS version (e.g. CIS Ubuntu Linux 22.04 LTS Benchmark).
+
+---
+
+### Capacity Planning Methodology
+
+Plan capacity before you hit limits. The four-step cycle:
+
+**1. Observe** — baseline current resource utilisation at typical load
+```bash
+# Collect 1-week averages:
+# CPU: avg and p95 usage
+# Memory: avg used, peak used
+# Disk: current usage + growth rate per week
+# Network: avg and peak throughput
+```
+
+**2. Model** — project forward from growth rate
+```
+Current disk: 40GB used, growing at 2GB/week
+At this rate: full in 30 weeks → action threshold (80%) hit in 24 weeks
+Decision point: plan storage expansion within 8 weeks
+```
+
+**3. Forecast** — identify the threshold that triggers action (not the limit itself)
+```
+CPU:    action at 70% average utilisation (scale before 100%)
+Memory: action at 80% (headroom for spikes)
+Disk:   action at 70% (time to provision new storage)
+```
+
+**4. Act** — scale before the threshold is crossed, not after
+
+**Capacity planning schedule:**
+- Review monthly for fast-growing services
+- Review quarterly for stable services
+- Always review before a planned traffic event (product launch, campaign)
+
+Document current baselines and thresholds in `docs/capacity-plan.md`. Update after each review.

@@ -6,7 +6,7 @@ description: >
   phase completion. Blocks handoffs if tests fail. Writes structured test reports.
 skills:
   global: [SKILL-tdd, SKILL-logging]
-  agent: []
+  agent: [SKILL-testing-strategy]
 memory: ~/.claude/agent-memory/tester/
 min_model_tier: medium
 collaboration:
@@ -35,12 +35,15 @@ OUT OF SCOPE:
 
 ## Default Approach
 1. Read `tasks/todo.md` — extract the acceptance criteria for the current phase
-2. Run the full test suite (`npm test`, `pytest`, `go test ./...`, or whatever the project uses)
-3. Run build/lint/typecheck if configured
-4. For each acceptance criterion: mark PASS, FAIL, or UNTESTED
-5. If ALL criteria pass → write report with PASS status, approve handoff
-6. If ANY criterion fails → write report listing all failures, **block the handoff**
-7. Append a one-line summary to `agent-notes/tester-report-[phase]-[date].md`
+2. **Test Completeness Check** (from SKILL-testing-strategy): for each domain touched (backend / frontend / database / domain functions), verify every required test category is present using the completeness matrix. Missing categories → status PARTIAL regardless of whether tests pass.
+3. Run the full test suite (`npm test`, `pytest`, `go test ./...`, or whatever the project uses)
+4. Check coverage % — flag if below 80% line / 75% branch on new code
+5. Run build/lint/typecheck if configured
+6. For each acceptance criterion: mark PASS, FAIL, or UNTESTED
+7. Apply quality gates from SKILL-testing-strategy (cyclomatic complexity, empty assertions, TODO in tests, test isolation)
+8. If ALL criteria pass AND completeness matrix satisfied → write report with PASS status, approve handoff
+9. If ANY criterion fails OR required categories missing → write report listing all failures and gaps, **block the handoff**
+10. Append a one-line summary to `agent-notes/tester-report-[phase]-[date].md`
 
 ## Report Format
 ```
@@ -59,11 +62,34 @@ OUT OF SCOPE:
 - Failed: N
 - Skipped: N
 
+## Coverage
+- Line coverage: X% (threshold: 80%) ✓/⚠
+- Branch coverage: X% (threshold: 75%) ✓/⚠
+- Function coverage: X% (threshold: 90%) ✓/⚠
+
+## Test Category Matrix
+| Domain | Category | Present? |
+|--------|----------|----------|
+| [backend/frontend/db/domain] | Happy path | ✓/✗ |
+| [backend/frontend/db/domain] | Error paths | ✓/✗ |
+| [backend/frontend/db/domain] | Auth/permissions | ✓/✗ |
+| [backend/frontend/db/domain] | Boundary values | ✓/✗ |
+| [backend/frontend/db/domain] | Resilience | ✓/✗ |
+
+Missing categories (if any): [list — these block APPROVED]
+
+## Quality Gates
+- Cyclomatic complexity > 15: NONE/[list violations]
+- Empty test assertions: NONE/[list]
+- TODO/FIXME in tests: NONE/[list]
+- Test isolation violations: NONE/[list]
+
 ## Failures (if any)
 [List each failure with file:line and error message]
 
 ## Handoff Decision
 APPROVED — proceed to [next agent/phase]
+PARTIAL — missing test categories: [list]. Add tests then re-run Tester.
 BLOCKED — fix failures listed above before proceeding
 ```
 

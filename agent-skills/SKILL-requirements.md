@@ -65,3 +65,66 @@ Before handing off to Architect:
 - [ ] Constraints (regulatory, technical, budget) are documented
 - [ ] "Won't have" list is written and agreed
 - [ ] Success metrics are defined (how will we know this worked?)
+
+---
+
+### RICE Prioritisation
+
+Use alongside MoSCoW for ranking features within the Must/Should tiers.
+
+**RICE score = (Reach × Impact × Confidence) ÷ Effort**
+
+| Factor | Meaning | How to estimate |
+|--------|---------|----------------|
+| **Reach** | How many users affected per quarter | From analytics or user research |
+| **Impact** | How much it moves the metric | 3 = massive, 2 = significant, 1 = low, 0.5 = minimal |
+| **Confidence** | How sure are you? | 100% = high evidence, 80% = some data, 50% = gut feel |
+| **Effort** | Person-weeks to build | Engineering estimate |
+
+```
+Feature A: Reach=1000, Impact=2, Confidence=80%, Effort=2 → RICE = (1000 × 2 × 0.8) / 2 = 800
+Feature B: Reach=5000, Impact=1, Confidence=50%, Effort=5 → RICE = (5000 × 1 × 0.5) / 5 = 500
+```
+
+Feature A scores higher despite lower reach — less effort and higher confidence.
+
+Rules:
+- Use RICE to rank items within a MoSCoW tier (don't use it to override Must/Won't decisions)
+- Document the estimates — RICE is only as good as the inputs
+- Revisit when any input changes significantly (new data, scope change)
+
+---
+
+### Definition of Ready (DoR)
+
+A user story is only moved into implementation when it meets ALL of these:
+
+- [ ] Story has a specific user type (not "user" or "admin")
+- [ ] Acceptance criteria are written and testable
+- [ ] All external dependencies are identified and available
+- [ ] Designs / wireframes approved (if UI work)
+- [ ] Non-functional requirements specified (performance targets, security requirements)
+- [ ] Story is sized (effort estimated)
+- [ ] "Won't do" boundary is explicit (what the story does NOT include)
+
+A story that fails DoR goes back to PM/Analyst — it is not the engineer's job to define scope during implementation.
+
+---
+
+### A/B Test Design Checklist
+
+Before running an experiment, these must be specified in the acceptance criteria:
+
+- [ ] **Hypothesis**: "If we change [X], we expect [metric Y] to change by [Z%] because [reason]"
+- [ ] **Primary metric**: one metric that determines success or failure (not a dashboard of 10)
+- [ ] **Guardrail metrics**: metrics that must not degrade (e.g. revenue, error rate)
+- [ ] **Minimum detectable effect (MDE)**: smallest change worth detecting (e.g. +2% conversion)
+- [ ] **Sample size**: calculated from MDE, baseline rate, desired power (80%), significance (α=0.05)
+  - Use a power calculator: `statsmodels.stats.proportion_power` or online tool
+- [ ] **Test duration**: minimum 2 weeks to capture weekly patterns; do NOT stop early on positive results
+- [ ] **Randomisation unit**: user, session, or device (must be consistent throughout)
+- [ ] **Stopping rule**: test runs to planned end date regardless of interim results (no peeking)
+- [ ] **Analysis method**: proportion test (conversions), t-test (continuous), Mann-Whitney (non-normal)
+
+**Statistical significance ≠ practical significance.** A 0.1% lift that is "statistically significant"
+may not be worth shipping. Report both p-value AND effect size.

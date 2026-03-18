@@ -73,3 +73,48 @@ Before marking a phase complete:
 - [ ] Any discovered technical debt logged in project CLAUDE.md
 - [ ] Next phase owner has been briefed on current state
 - [ ] Blockers for the next phase have been resolved or have mitigation plans
+
+---
+
+### Definition of Done (DoD)
+
+A phase or story is DONE only when ALL of these are true. Not "mostly done". Not "done except tests".
+
+**Code:**
+- [ ] All acceptance criteria verified (not assumed)
+- [ ] Tester agent run → APPROVED (not PARTIAL, not BLOCKED)
+- [ ] No regressions in previously passing tests
+- [ ] Build/lint/typecheck passes with zero errors
+- [ ] No TODO, FIXME, or commented-out code left in the diff
+
+**Review and quality:**
+- [ ] Code reviewed and approved (or peer-reviewed by another agent in the chain)
+- [ ] Cyclomatic complexity within limits (no function > 15)
+- [ ] Security review passed (input validation, auth checks, no secrets in logs)
+
+**Documentation and observability:**
+- [ ] New env vars added to `.env.example`
+- [ ] Structured logging added at decision points
+- [ ] API changes reflected in OpenAPI spec or equivalent
+
+**Deployment readiness:**
+- [ ] Migrations tested (up and down)
+- [ ] Feature works in staging environment
+- [ ] Performance target not regressed (check p99 if measurable)
+
+**Anything not meeting DoD is not done — it is in progress.** Partial credit is not accepted
+for the purpose of marking a phase complete.
+
+---
+
+### DORA as a Project Health Signal
+
+Track these four signals as leading indicators of project health. Poor scores predict incidents
+before they happen.
+
+| Signal | What poor score means | Action |
+|--------|----------------------|--------|
+| Long lead time (>1 week commit → prod) | Pipeline bottleneck or large batch sizes | Break work into smaller shippable units |
+| Low deployment frequency (<1/week) | Fear of deploying, manual gates, large batches | Automate deployment, add feature flags |
+| High change failure rate (>15%) | Insufficient testing, too-large changes | Enforce test completeness, reduce batch size |
+| Slow MTTR (>1 day) | Poor observability, unclear runbooks | Add alerting, write incident runbooks |

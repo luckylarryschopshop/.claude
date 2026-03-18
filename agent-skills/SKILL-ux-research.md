@@ -74,3 +74,83 @@ Touch interaction rules (mobile):
 - Focus management: after modal opens, focus moves to it; after close, returns to trigger
 - Keyboard navigation: every flow completable without a mouse
 - Screen reader: meaningful alt text for all images that convey information
+
+---
+
+### Kano Model — Feature Categorisation
+
+Use when researching which features to build next. Kano categorises features by the relationship
+between their presence/absence and user satisfaction.
+
+| Category | Absent | Present | Strategy |
+|----------|--------|---------|----------|
+| **Must-be** (basic expectations) | Very dissatisfied | Neutral (taken for granted) | Ship first; not differentiating |
+| **One-dimensional** (performance) | Proportionally dissatisfied | Proportionally satisfied | More = better; invest in proportion to ROI |
+| **Attractive** (delighters) | Neutral (users don't know they want it) | Delighted | High impact; hard to copy; creates fans |
+| **Indifferent** | Neutral | Neutral | Don't build; opportunity cost too high |
+| **Reverse** | Some users prefer absence | Some users dislike it | Research before building |
+
+**How to apply:** in user interviews, ask two versions per feature:
+- Functional: "How would you feel if this feature existed?"
+- Dysfunctional: "How would you feel if this feature did NOT exist?"
+
+Map answers (delighted/expected/neutral/tolerable/dissatisfied) to the Kano matrix to classify.
+
+---
+
+### Cognitive Load Principles
+
+Reduce the mental effort required to use the interface.
+
+**Miller's Law:** working memory holds 7 ± 2 items. Limit choices, steps, and items per screen.
+
+**Chunking:** group related information visually. Users process chunks, not individual items.
+```
+Bad:  12 navigation items in a flat list
+Good: 4 groups of 3 items with visual separators
+```
+
+**Progressive disclosure:** show only what the user needs for the current step.
+- Default view: essential actions only
+- Secondary actions: revealed on demand (expand, "More options", contextual menus)
+- Expert controls: available but not prominent
+
+**Cognitive load anti-patterns:**
+| Anti-pattern | Why it overloads | Fix |
+|-------------|-----------------|-----|
+| Form with 15+ fields | Too many decisions at once | Multi-step form, show only relevant fields |
+| Dashboard with 20 metrics | Can't identify what matters | Hierarchy: primary KPIs large, secondary small |
+| Action confirmed by clicking OK in a confirmation modal | Dialog adds no information | Inline confirmation with specific action text ("Delete 3 items") |
+| Error message that requires reading to understand action | Parsing + decision while stressed | Lead with action: "Try again" before explanation |
+
+---
+
+### Error Recovery Patterns (Norman's Design Principles)
+
+Good error design prevents errors AND helps users recover gracefully when they do occur.
+
+**Error prevention first (best):**
+- Constrain inputs: use select menus, date pickers, sliders instead of free text where possible
+- Validate on blur (not on submit) — catch errors before the user moves on
+- Confirm destructive actions with explicit object name: "Delete 'Invoice 2024-01'" not "Delete item"
+
+**Error recovery (when prevention fails):**
+
+| Recovery pattern | Use when | Example |
+|-----------------|----------|---------|
+| **Undo** | Action is reversible and user may regret it | Email "send" with 5s undo snackbar |
+| **Inline correction** | Form validation failure | Highlight field + specific message + how to fix |
+| **Suggested correction** | User input close to valid value | "Did you mean: john@example.com?" |
+| **Safe defaults** | User left a required field blank | Pre-fill with sensible default, make it editable |
+| **Graceful degradation** | System failure | Show stale data with "Last updated X" rather than blank |
+
+**Error message formula:**
+1. What went wrong (specific, not "an error occurred")
+2. Why it went wrong (if it helps the user)
+3. How to fix it (always)
+4. Who to contact if they can't fix it (for blocking errors)
+
+```
+Bad:  "Invalid input"
+Good: "Password must be at least 8 characters. Use a mix of letters and numbers."
+```

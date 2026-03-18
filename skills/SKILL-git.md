@@ -136,3 +136,48 @@ For any new project:
 
 Run `git status` and confirm clean before starting Phase 1 work.
 The session does not proceed until this check passes.
+
+---
+
+## Code Review Standards
+
+### PR Size Guidelines
+- Target: ≤ 400 lines changed per PR (excluding generated files, migrations, lockfiles)
+- Hard limit: > 800 lines → split before review. Large PRs miss bugs.
+- Each PR should do one thing: one feature, one fix, one refactor — not all three
+- If a PR touches both app logic AND infrastructure: split it
+
+### PR Description Template
+```markdown
+## What
+[One sentence — what this PR does]
+
+## Why
+[Why this change is needed — link to ticket/issue if exists]
+
+## How
+[Brief summary of the approach — especially if non-obvious]
+
+## Test plan
+- [ ] Unit tests added/updated
+- [ ] Manual verification: [what you clicked/ran]
+- [ ] Edge cases considered: [list or "N/A"]
+```
+
+### Reviewer Checklist (what to check, in order)
+1. **Correctness** — does it do what the description says?
+2. **Tests** — are the right things tested? Would this catch a regression?
+3. **Security** — any new input trust boundaries? Auth checks present?
+4. **Readability** — would someone cold-reading this understand it in 5 minutes?
+5. **Scope** — does it do MORE than described? (scope creep in a PR = hidden risk)
+6. **Performance** — any N+1 queries, missing indexes, unbounded loops on large data?
+
+### Review response conventions
+- **Blocking** (`must fix`): correctness, security, or data integrity issue — do not approve
+- **Non-blocking** (`nit:` prefix): style, naming, minor improvements — approve anyway, author's choice
+- **Question** (`q:` prefix): seeking understanding, not requesting a change
+
+### Merge strategy
+- **Squash merge**: default for feature branches — clean history, one commit per feature
+- **Merge commit**: use when the branch history itself is meaningful (long-running feature with deliberate checkpoints)
+- **Rebase**: use only for clean linear history on small solo branches; never rebase shared branches

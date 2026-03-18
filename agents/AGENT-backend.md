@@ -6,7 +6,7 @@ description: >
   integrations. Invoke during implementation phases for server-side work.
 skills:
   global: [SKILL-code-quality, SKILL-tdd, SKILL-logging, SKILL-api-design, SKILL-security]
-  agent: []
+  agent: [SKILL-backend-patterns]
 memory: ~/.claude/agent-memory/backend/
 min_model_tier: large
 collaboration:

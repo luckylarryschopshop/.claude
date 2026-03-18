@@ -66,3 +66,86 @@ Permissions-Policy: [restrict as needed]
 - High (7.0–8.9): Auth bypass, significant data exposure, privilege escalation
 - Medium (4.0–6.9): Limited data exposure, requires user interaction, limited scope
 - Low (0.1–3.9): Minimal impact, requires significant preconditions
+
+---
+
+### OWASP LLM Top 10 (AI-Integrated Applications)
+
+Apply when the codebase calls an LLM API or uses AI-generated output.
+
+| # | Vulnerability | Check |
+|---|---------------|-------|
+| LLM01 | **Prompt Injection** | Can user-supplied content alter the system prompt or override instructions? Validate/sanitise all user input before embedding in prompts. |
+| LLM02 | **Insecure Output Handling** | Is LLM output rendered as HTML, executed as code, or passed to a shell without sanitisation? Treat LLM output as untrusted input. |
+| LLM03 | **Training Data Poisoning** | If fine-tuning: is training data sourced from trusted, validated datasets only? |
+| LLM04 | **Model Denial of Service** | Can an attacker send inputs that cause unusually long/expensive completions? Enforce token limits and timeout on every LLM call. |
+| LLM05 | **Supply Chain Vulnerabilities** | Are model weights, fine-tunes, or plugins from verified sources? Pin model versions. |
+| LLM06 | **Sensitive Information Disclosure** | Could the LLM reveal PII, credentials, or confidential data from its context window? Audit what goes into every prompt. |
+| LLM07 | **Insecure Plugin Design** | If the LLM can call tools/plugins: does each plugin enforce its own auth and input validation? |
+| LLM08 | **Excessive Agency** | Does the LLM have more permissions than it needs? Apply least privilege to all tool calls. |
+| LLM09 | **Overreliance** | Is LLM output used for decisions without human review where errors have material impact? |
+| LLM10 | **Model Theft** | Is the model endpoint rate-limited and authenticated to prevent extraction? |
+
+**Mandatory checks for any LLM integration:**
+- [ ] System prompt is not directly injectable by user input
+- [ ] LLM output is sanitised before rendering in HTML (XSS via LLM is real)
+- [ ] Token budget and timeout enforced on every call
+- [ ] No PII or secrets in prompt context unless necessary and logged appropriately
+- [ ] Tool/function call permissions follow least privilege
+
+---
+
+### SLSA Supply Chain Framework
+
+Rate every artifact produced against SLSA levels (Source Levels for Software Artifacts).
+
+| Level | Requirement | What it prevents |
+|-------|-------------|-----------------|
+| **SLSA 1** | Build process is scripted/automated | Manual, undocumented builds |
+| **SLSA 2** | Build uses a version-controlled build service; provenance generated | Tampering after source commit |
+| **SLSA 3** | Build runs in an isolated, ephemeral environment; provenance signed | Compromised build environment |
+| **SLSA 4** | Two-party review of all changes; hermetic reproducible build | Insider threat, supply chain attack |
+
+**Minimum target for production services: SLSA 2**
+
+Practical SLSA 2 checklist:
+- [ ] Build runs in CI (not a developer laptop)
+- [ ] Source is version-controlled with protected main branch
+- [ ] Artifact provenance generated (GitHub Actions: `actions/attest-build-provenance`)
+- [ ] Dependencies pinned by hash, not just version tag (e.g. `pip-compile --generate-hashes`)
+- [ ] Container image built from pinned base digest
+- [ ] SBOM (Software Bill of Materials) generated on every build: `syft` or `cyclonedx`
+
+---
+
+### Zero-Trust Architecture Checklist
+
+Zero trust: never trust any request implicitly based on network location. Verify every request.
+
+| Principle | Check |
+|-----------|-------|
+| **Never trust, always verify** | Every service-to-service call is authenticated (mTLS or token), not just "on the internal network" |
+| **Least privilege access** | Service accounts have only the permissions they need for their specific function |
+| **Assume breach** | Segment networks so a compromised service cannot reach all other services |
+| **Verify explicitly** | Auth decisions use all available signals: identity, device, location, behaviour |
+| **Log everything** | All access (successful and failed) is logged with enough context to reconstruct what happened |
+| **Short-lived credentials** | Service tokens expire; no permanent credentials where rotatable alternatives exist |
+| **Microsegmentation** | Internal services are not reachable by default; explicit allow-list per service |
+
+---
+
+### Secure SDLC Integration Points
+
+Where security gates belong in the development lifecycle:
+
+| Phase | Security action | Owner |
+|-------|----------------|-------|
+| **Requirements** | Threat model draft; identify sensitive data flows | Security + Architect |
+| **Design** | STRIDE threat model per component; ADR for auth decisions | Security |
+| **Coding** | SAST linting (semgrep, bandit); no secrets in code | Backend/Frontend |
+| **PR review** | Security checklist item in PR template | All engineers |
+| **CI pipeline** | Dependency scan (pip-audit, npm audit); SAST; container scan (Trivy) | DevOps |
+| **Staging** | DAST scan (OWASP ZAP) against staging environment | Security |
+| **Pre-prod** | Penetration test for new auth flows or data exposure changes | Security |
+| **Production** | Runtime anomaly detection; WAF rules reviewed | DevOps + Security |
+| **Post-incident** | Security root cause added to lessons.md | Security |

@@ -194,3 +194,53 @@ For any sync feature (LAN, file export, remote):
 - Keys derived on-device from passphrase — server never has keys
 - Even a compromised sync server cannot read user data
 - Sync protocol uses encrypted deltas, not full database copies
+
+---
+
+## Token Storage (Web Applications)
+
+Where you store auth tokens determines what attacks are possible.
+
+| Storage | XSS risk | CSRF risk | Use for |
+|---------|----------|-----------|---------|
+| `httpOnly` cookie | ✗ None (JS can't read it) | ✓ Requires CSRF token | Session tokens, refresh tokens |
+| `localStorage` | ✓ Readable by any JS | ✗ Not sent automatically | Never for auth tokens |
+| `sessionStorage` | ✓ Readable by any JS | ✗ Not sent automatically | Short-lived, non-sensitive data only |
+| Memory (JS variable) | ✓ Cleared on page reload | ✗ | Access tokens (short TTL, reload is acceptable) |
+
+**Rule: store session/refresh tokens in `httpOnly; Secure; SameSite=Strict` cookies only.**
+Access tokens (short-lived, ≤15 min) may be held in memory if SPA architecture requires it.
+
+**JWT security checklist:**
+- [ ] `alg` is explicitly validated server-side — reject `alg: none`
+- [ ] Signature verified on EVERY request — not just at login
+- [ ] Expiry (`exp`) checked on every request
+- [ ] Issuer (`iss`) and audience (`aud`) claims validated
+- [ ] Signing key is a strong secret (≥256 bits) or asymmetric key pair (RS256/ES256)
+- [ ] Refresh tokens are single-use (rotate on each use) and revocable
+- [ ] Token payload contains no sensitive data (treat as base64, not encrypted)
+
+---
+
+## CORS Configuration
+
+Misconfigured CORS is a common security mistake. Never open CORS wider than necessary.
+
+```python
+# FastAPI example — be explicit, never use wildcard with credentials
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://app.example.com"],   # explicit list — never "*" with credentials
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allow_headers=["Authorization", "Content-Type", "X-Trace-Id"],
+)
+```
+
+**CORS rules:**
+- Never `allow_origins=["*"]` with `allow_credentials=True` — browsers block it AND it's a security hole
+- Development origins (`http://localhost:3000`) must be in a separate dev-only config, not committed to prod config
+- Preflight (`OPTIONS`) responses should be cached: `max_age=600` (10 minutes)
+- If an endpoint is public (no auth, no cookies): `allow_origins=["*"]` is acceptable

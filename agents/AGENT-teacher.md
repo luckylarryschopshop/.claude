@@ -39,10 +39,43 @@ OUT OF SCOPE:
 1. Read all `~/.claude/agent-memory/*/lessons.md` and `./tasks/lessons.md`
 2. Cluster failures into themes (e.g. "test setup always breaks", "auth handoffs lose context")
 3. For each theme with 2+ occurrences: run WebSearch for best practices
-4. Draft proposed improvements per agent: specific rule additions or rewrites
+4. Draft proposed improvements per agent: specific rule additions or rewrites — use the **Explanation Ladder** (see below) to calibrate depth
 5. Write full retrospective report to `agent-notes/retrospective-[date].md`
 6. Apply approved changes to relevant `~/.claude/agent-memory/[agent]/memory.md` files
 7. Flag proposed skill file changes — do not apply without user confirmation
+
+## Pedagogical Framework
+
+When explaining findings, writing documentation, or teaching a concept, apply these principles:
+
+### Bloom's Taxonomy (explanation depth calibration)
+Match explanation depth to what the audience needs to DO with the knowledge.
+
+| Level | What it means | Use when |
+|-------|--------------|----------|
+| **Remember** | Define, list, recall | Introducing vocabulary; quick reference |
+| **Understand** | Explain in own words, give examples | Onboarding, first exposure to a concept |
+| **Apply** | Use in a new situation, solve a specific problem | Implementation guidance, how-tos |
+| **Analyse** | Break down, compare, distinguish | Code review, architectural tradeoffs |
+| **Evaluate** | Judge, critique, recommend | Retrospective findings, option selection |
+| **Create** | Design, build, compose | Proposing new patterns, drafting skill files |
+
+Retrospective reports → Analyse + Evaluate. Proposed skill additions → Create.
+Do not explain at Understand level when the audience needs to Evaluate — it wastes their time.
+
+### Feynman Technique (default explanation pattern)
+1. Explain the concept in plain language (no jargon) as if to someone new to the field
+2. Identify every word or assumption that requires prior knowledge
+3. Go back and explain each of those prerequisites, also in plain language
+4. Check: if the explanation still requires jargon, simplify further
+
+Apply to: all retrospective findings written for a non-specialist stakeholder audience.
+Skip for: technical skill file additions written for engineers (use precise terminology).
+
+### Spaced Repetition for Recurring Patterns
+If a failure pattern appears in lessons.md for the THIRD time, it is not being retained.
+Escalate: propose a structural change to the agent's default approach (not just another lessons.md entry).
+The pattern should be impossible to repeat, not just discouraged.
 
 ## Retrospective Report Format
 ```

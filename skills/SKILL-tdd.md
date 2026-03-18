@@ -7,6 +7,50 @@ description: Test-driven development workflow, test naming conventions, fixture
 
 # TDD Skill
 
+## Testing Pyramid Ratios
+
+Target distribution for every project:
+
+| Layer | Target | Rationale |
+|-------|--------|-----------|
+| Unit | 70% | Fast feedback, catches logic errors cheaply |
+| Integration | 20% | Validates service boundaries and DB contracts |
+| E2E | 10% | Covers critical user journeys only — slow, brittle if overused |
+
+Flag when the suite deviates significantly (e.g. >30% E2E, zero integration tests).
+
+---
+
+## Coverage Threshold
+
+**80% line coverage on all new code.** Track via coverage report on every CI run.
+- Branch coverage target: 75% — every conditional arm must be exercised
+- Below threshold: annotate the report, do not auto-approve the phase
+
+```bash
+# Python
+pytest --cov=src --cov-report=json --cov-fail-under=80
+
+# JS/TS
+nyc --reporter=json --branches=75 --lines=80 npm test
+```
+
+---
+
+## Resilience Test Requirement
+
+For every external dependency call (HTTP, database, queue, AI API):
+**one error-path test is mandatory — not optional.**
+
+Minimum error paths to cover per external call:
+- Timeout / slow response
+- Service unavailable (5xx or connection error)
+- Malformed / unexpected response
+
+If a function calls an external service and has zero error-path tests: it is **incomplete**.
+
+---
+
 ## The Discipline
 
 Tests are written BEFORE implementation. Every time. No exceptions.

@@ -177,3 +177,64 @@ Always log application start and stop:
 [2025-01-15 09:32:01] [INFO] [STARTUP] Services initialised successfully
 [2025-01-15 22:00:00] [INFO] [STARTUP] App shutting down gracefully
 ```
+
+---
+
+## Text vs Structured JSON — When to Use Which
+
+| Context | Format | Why |
+|---------|--------|-----|
+| Local development, single-process app | Text `[timestamp] [LEVEL] [COMPONENT] message` | Human-readable in terminal |
+| Production multi-service / distributed | Structured JSON | Machine-parseable; log aggregators (ELK, Loki, CloudWatch) query on fields |
+| File-based error sidecars | Text | Meant for non-technical users to open directly |
+
+**Structured JSON log format** (for distributed/production services):
+```json
+{
+  "timestamp": "2025-01-15T09:32:12Z",
+  "level": "ERROR",
+  "service": "order-service",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "message": "Payment charge failed",
+  "order_id": "ord_abc123",
+  "error": "ConnectionTimeout",
+  "attempt": 2
+}
+```
+
+Never mix both formats in the same service — pick one and be consistent throughout.
+
+---
+
+## Correlation IDs (Distributed Tracing)
+
+In any service that makes downstream calls, propagate a correlation ID so all logs for
+one request can be found together across services.
+
+**Generate at the edge (API gateway / first service):**
+```python
+import uuid
+
+def get_or_create_trace_id(request) -> str:
+    return request.headers.get("X-Trace-Id") or str(uuid.uuid4())
+```
+
+**Propagate downstream in every outbound HTTP call:**
+```python
+headers = {"X-Trace-Id": trace_id}
+requests.post(downstream_url, headers=headers, ...)
+```
+
+**Include in every log line:**
+```python
+logger.error("Payment failed", extra={"trace_id": trace_id, "order_id": order_id})
+```
+
+Standard header: `traceparent` (W3C/OpenTelemetry format, preferred); `X-Trace-Id` for simpler setups.
+
+**What NOT to log (ever):**
+- Passwords, API keys, session tokens
+- Full card numbers (log last 4 only)
+- PII: name, email, address (log internal IDs only)
+- Full request/response bodies on authenticated endpoints (may contain PII)

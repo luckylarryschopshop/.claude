@@ -92,3 +92,65 @@ Radius: --radius-md
 - Never use `white` or `black` directly — use semantic tokens
 - Dark mode is not light mode inverted — use mid-range backgrounds (gray-800/900), not black
 - Elevation in dark mode: lighter backgrounds for higher elevation (opposite of light mode)
+
+### Dark Mode Implementation Details
+
+1. **System preference detection:**
+```css
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--gray-900);
+    --color-surface:    var(--gray-800);
+    --color-text-primary: var(--gray-50);
+    /* remap all semantic tokens — primitives unchanged */
+  }
+}
+```
+
+2. **Manual toggle (in addition to system preference):**
+```javascript
+// Store preference; apply before first paint to prevent flash
+const theme = localStorage.getItem('theme') ?? 'system';
+if (theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.documentElement.setAttribute('data-theme', 'dark');
+}
+```
+
+3. **Do not:**
+- Use `filter: invert()` on the whole page (colours become wrong, images invert)
+- Hard-code `color: white` or `background: black` in component styles
+- Override semantic tokens with `!important` (breaks the token remap system)
+
+4. **Images and media in dark mode:**
+- Photos: no change needed
+- SVG icons: use `currentColor` so they inherit text colour automatically
+- Illustrations with white backgrounds: add `mix-blend-mode: multiply` or provide dark variants
+
+5. **Test matrix before shipping:**
+- [ ] `prefers-color-scheme: dark` system preference respected
+- [ ] Manual toggle overrides system preference
+- [ ] Preference persists across sessions
+- [ ] No flash of wrong theme on page load
+- [ ] All colour contrast ratios still pass at AA in dark mode
+
+---
+
+### Gestalt Principles (Design Critique Checklist)
+
+Use when reviewing layouts for clarity and visual coherence.
+
+| Principle | Question to ask |
+|-----------|----------------|
+| **Proximity** | Are related items grouped close together? Unrelated items have space between them? |
+| **Similarity** | Do items that behave the same way look the same? (same colour, shape, size) |
+| **Continuity** | Does the eye flow naturally through the layout without interruption? |
+| **Closure** | Can users infer incomplete shapes? (icons, progress indicators) |
+| **Figure/Ground** | Is it clear what is foreground content vs background? Sufficient contrast? |
+| **Common region** | Are grouped items contained in a visual boundary (card, panel, border)? |
+| **Focal point** | Is there a single dominant visual element on each screen that draws the eye first? |
+
+**Common Gestalt violations:**
+- Navigation items spaced the same as content items → proximity violation (group nav visually)
+- Primary and secondary buttons identical size and colour → similarity violation (differentiate by weight/colour)
+- Dense information layout with no visual hierarchy → focal point missing (use size contrast)
+- Card borders so light they disappear → figure/ground failure (increase contrast or use shadow)
