@@ -113,3 +113,46 @@ Do not load all skills at once — load only what the current task requires.
 
 Project-specific skills override global skills where they conflict.
 Project CLAUDE.md lists which project skills exist and when to load them.
+
+---
+
+## Agents Available
+
+Agents are skill bundles with identity. Load an agent file exactly like a skill file — read it on demand.
+See `~/.claude/protocols/PROTOCOL-collaboration.md` for orchestration rules.
+**Tester agent is mandatory after every phase.** See collaboration protocol.
+
+| Agent | Role | Load when |
+|---|---|---|
+| `~/.claude/agents/AGENT-pm.md` | Product Manager | Defining requirements, scope, user stories |
+| `~/.claude/agents/AGENT-analyst.md` | Business/Data Analyst | Data analysis, requirements from data, reporting |
+| `~/.claude/agents/AGENT-architect.md` | Software Architect | System design, ADRs, tech selection |
+| `~/.claude/agents/AGENT-backend.md` | Backend Engineer | API, services, business logic |
+| `~/.claude/agents/AGENT-frontend.md` | Frontend Engineer | Browser/mobile UI implementation |
+| `~/.claude/agents/AGENT-database.md` | Database Engineer | Schema, migrations, query optimisation |
+| `~/.claude/agents/AGENT-devops.md` | DevOps Engineer | CI/CD, containers, cloud infrastructure |
+| `~/.claude/agents/AGENT-sysadmin.md` | Systems Administrator | Servers, OS, networking, bare-metal |
+| `~/.claude/agents/AGENT-security.md` | Security Engineer | Audits, threat modelling, vulnerability review |
+| `~/.claude/agents/AGENT-designer.md` | Visual/UI Designer | Design systems, components, visual language |
+| `~/.claude/agents/AGENT-ux.md` | UX Researcher | User flows, interaction specs, usability |
+| `~/.claude/agents/AGENT-finance.md` | Financial Analyst | Financial modelling, unit economics, projections |
+| `~/.claude/agents/AGENT-trader.md` | Quantitative Trader | Trading strategies, backtesting, risk management |
+| `~/.claude/agents/AGENT-tester.md` | QA Engineer | Phase validation — **auto-invoked after every phase** |
+| `~/.claude/agents/AGENT-teacher.md` | Retrospective Facilitator | Post-project retrospective, lessons synthesis |
+
+### Skill Inheritance Chain (highest → lowest priority)
+```
+./skills/SKILL-X.md               ← project-level override
+~/.claude/agent-skills/SKILL-X.md ← agent-domain skill
+~/.claude/skills/SKILL-X.md       ← global baseline
+```
+
+### Project Framework Templates
+For opinionated agent+phase tables by project type:
+- `~/.claude/frameworks/FRAMEWORK-webapp.md`
+- `~/.claude/frameworks/FRAMEWORK-mobile.md`
+- `~/.claude/frameworks/FRAMEWORK-game.md`
+- `~/.claude/frameworks/FRAMEWORK-cli.md`
+- `~/.claude/frameworks/FRAMEWORK-api-service.md`
+- `~/.claude/frameworks/FRAMEWORK-finance-tool.md`
+- `~/.claude/frameworks/FRAMEWORK-data-pipeline.md`

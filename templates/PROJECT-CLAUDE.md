@@ -89,3 +89,26 @@ Examples of valid overrides:
 - "Do not use subagents — single context only (this project is small)"
 - "Default log level is DEBUG for this project"
 - "Commit frequency: every feature, not every function (faster iteration preferred)"
+
+---
+
+## Agents — Active This Project
+
+Load agent files on demand, exactly like skills.
+See `~/.claude/protocols/PROTOCOL-collaboration.md` for orchestration rules.
+Tester agent is mandatory after every phase — declare it in every project.
+
+Global agents: `~/.claude/agents/AGENT-[name].md`
+
+| Agent | Load when | Phase |
+|---|---|---|
+| `~/.claude/agents/AGENT-tester.md` | After every phase completion | All |
+| `~/.claude/agents/AGENT-[name].md` | [trigger condition] | [N] |
+| `~/.claude/agents/AGENT-[name].md` | [trigger condition] | [N–M] |
+
+Agent-specific skills (if any):
+| Skill | Agent | Load in phases |
+|---|---|---|
+| `~/.claude/agent-skills/SKILL-[name].md` | [agent] | [phases] |
+
+Framework template used: `~/.claude/frameworks/FRAMEWORK-[type].md` (or "none")
