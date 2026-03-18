@@ -116,29 +116,38 @@ Project CLAUDE.md lists which project skills exist and when to load them.
 
 ---
 
+## Auto-Orchestration (Always Active)
+
+**On every task, classify first — do not start work until classification is done.**
+
+| Task signals | Type | Action |
+|---|---|---|
+| "explain", "what is", "how does", "teach me", "why does" | question | Answer directly — no agents |
+| error message, stack trace, "not working", "broken", "failing", "crash" | bug-fix | Load single domain agent (see map below) → Tester after |
+| "review", "audit", "check", "assess", "analyse this" | review | Load Security → Tester |
+| "build", "create", "new project", "scaffold", "from scratch" | new-project | Read `~/.claude/agents/AGENT-orchestrator.md` |
+| "add", "implement", "feature", "extend", "integrate" | add-feature | Read `~/.claude/agents/AGENT-orchestrator.md` |
+| ambiguous | — | Treat as add-feature; read orchestrator |
+
+**Bug-fix domain map** — load the ONE most relevant agent:
+- API / server / endpoint / auth error → backend
+- UI / component / browser / CSS → frontend
+- Query / migration / constraint / ORM → database
+- Deploy / CI / container / k8s → devops
+- Server / OS / networking → sysadmin
+- Multi-domain or unclear → read orchestrator instead
+
+**Tester is mandatory after every phase regardless of task type. No exceptions.**
+
+Do NOT ask the user to declare agents or load files manually.
+The orchestrator and this classifier replace per-project agent declarations entirely.
+
+---
+
 ## Agents Available
 
-Agents are skill bundles with identity. Load an agent file exactly like a skill file — read it on demand.
-See `~/.claude/protocols/PROTOCOL-collaboration.md` for orchestration rules.
-**Tester agent is mandatory after every phase.** See collaboration protocol.
-
-| Agent | Role | Load when |
-|---|---|---|
-| `~/.claude/agents/AGENT-pm.md` | Product Manager | Defining requirements, scope, user stories |
-| `~/.claude/agents/AGENT-analyst.md` | Business/Data Analyst | Data analysis, requirements from data, reporting |
-| `~/.claude/agents/AGENT-architect.md` | Software Architect | System design, ADRs, tech selection |
-| `~/.claude/agents/AGENT-backend.md` | Backend Engineer | API, services, business logic |
-| `~/.claude/agents/AGENT-frontend.md` | Frontend Engineer | Browser/mobile UI implementation |
-| `~/.claude/agents/AGENT-database.md` | Database Engineer | Schema, migrations, query optimisation |
-| `~/.claude/agents/AGENT-devops.md` | DevOps Engineer | CI/CD, containers, cloud infrastructure |
-| `~/.claude/agents/AGENT-sysadmin.md` | Systems Administrator | Servers, OS, networking, bare-metal |
-| `~/.claude/agents/AGENT-security.md` | Security Engineer | Audits, threat modelling, vulnerability review |
-| `~/.claude/agents/AGENT-designer.md` | Visual/UI Designer | Design systems, components, visual language |
-| `~/.claude/agents/AGENT-ux.md` | UX Researcher | User flows, interaction specs, usability |
-| `~/.claude/agents/AGENT-finance.md` | Financial Analyst | Financial modelling, unit economics, projections |
-| `~/.claude/agents/AGENT-trader.md` | Quantitative Trader | Trading strategies, backtesting, risk management |
-| `~/.claude/agents/AGENT-tester.md` | QA Engineer | Phase validation — **auto-invoked after every phase** |
-| `~/.claude/agents/AGENT-teacher.md` | Retrospective Facilitator | Post-project retrospective, lessons synthesis |
+15 agents in `~/.claude/agents/`. Selected automatically by the orchestrator — do not load manually unless overriding.
+Full roster and skill inheritance chain: see `~/.claude/agents/AGENT-orchestrator.md`.
 
 ### Skill Inheritance Chain (highest → lowest priority)
 ```
@@ -149,10 +158,4 @@ See `~/.claude/protocols/PROTOCOL-collaboration.md` for orchestration rules.
 
 ### Project Framework Templates
 For opinionated agent+phase tables by project type:
-- `~/.claude/frameworks/FRAMEWORK-webapp.md`
-- `~/.claude/frameworks/FRAMEWORK-mobile.md`
-- `~/.claude/frameworks/FRAMEWORK-game.md`
-- `~/.claude/frameworks/FRAMEWORK-cli.md`
-- `~/.claude/frameworks/FRAMEWORK-api-service.md`
-- `~/.claude/frameworks/FRAMEWORK-finance-tool.md`
-- `~/.claude/frameworks/FRAMEWORK-data-pipeline.md`
+`~/.claude/frameworks/FRAMEWORK-{webapp,mobile,game,cli,api-service,finance-tool,data-pipeline}.md`

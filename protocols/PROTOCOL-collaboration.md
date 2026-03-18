@@ -67,30 +67,36 @@ The Teacher agent is invoked:
 
 Teacher invocation is NOT automatic per phase — it is a heavier process run at reflection points.
 
-## Declaring Agents in Project CLAUDE.md
-Projects must declare active agents in their CLAUDE.md:
+## Agent Selection — Automatic vs Manual
+
+**Default: agents are selected automatically.** CLAUDE.md contains a task classifier
+that routes to `AGENT-orchestrator.md` for new-project and add-feature tasks. No per-project
+declaration is required. Do not ask the user to declare agents.
+
+**Manual override** (advanced): if a project needs to pin specific agents or override
+the orchestrator's selection, declare them in project CLAUDE.md:
 
 ```markdown
-## Agents — Active This Project
-
+## Agents — Manual Override (optional)
 | Agent | Load when | Phase |
 |---|---|---|
-| ~/.claude/agents/AGENT-pm.md | Requirements definition | 1 |
-| ~/.claude/agents/AGENT-architect.md | System design | 2 |
-| ~/.claude/agents/AGENT-backend.md | API implementation | 3–4 |
-| ~/.claude/agents/AGENT-tester.md | After every phase | All |
+| ~/.claude/agents/AGENT-architect.md | System design | 1 |
+| ~/.claude/agents/AGENT-backend.md   | API implementation | 2–3 |
+| ~/.claude/agents/AGENT-tester.md    | After every phase | All |
 ```
 
-## Session Start Checklist
-At the start of every multi-agent session:
-1. Read project CLAUDE.md — identify current phase and active agent
-2. Read the agent file for the active agent
-3. Read agent-memory/[agent]/memory.md + lessons.md
-4. Read any pending handoff files in agent-notes/
-5. Read tasks/todo.md — current phase tasks and acceptance criteria
-6. Read tasks/lessons.md — project-level correction history
+When a manual override is present, the orchestrator is skipped for that project.
 
-**Total context load ≤ 8 files. Load skills on demand, not all at session start.**
+## Session Start Checklist
+At the start of every session:
+1. Classify the task (CLAUDE.md Auto-Orchestration table)
+2. For new-project / add-feature: read `AGENT-orchestrator.md`; let it produce the session plan
+3. Read the current phase's agent file(s)
+4. Read agent-memory/[agent]/memory.md + lessons.md for each active agent
+5. Read any pending handoff files in agent-notes/
+6. Read tasks/todo.md if it exists
+
+**Total context load ≤ 8 files at any one time. Load skills on demand within agent sessions.**
 
 ## Conflict Resolution
 When two agents disagree on a decision:
